@@ -2,7 +2,7 @@
 #include<string.h>
 #define Length 300
 #define Total_Record 6000
-#define Backup_start_num 5000
+#define Backup_start_num 5001
 #define true 1
 #define false 0
 #define bool int
