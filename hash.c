@@ -1,13 +1,13 @@
 #include<stdio.h>
 #include<string.h>
 #define Length 300
-#define Total_Record 2000
-#define Backup_num 1000
+#define Total_Record 6000
+#define Backup_start_num 5000
 #define true 1
 #define false 0
 #define bool int
 
-const int p = 23333, mod = 991;
+const int p = 23333, mod = 4993;
 //const int Length = 300, Total_Record = 2000;
 struct HASH_TABLE
 {
@@ -69,12 +69,12 @@ int get_hash(char *s, int len)
 	int Hash_num = 0;
 	for (; i < len ; i++)
 		Hash_num = (1ll * Hash_num * p % mod + s[i]) % mod;
-	return Hash_num;
+	return Hash_num + 1;
 }
 void init()
 {
 	freopen("C:\\Users\\magic_star\\Desktop\\dnsrelay.txt","r",stdin);
-	int Backup = Backup_num + 1;
+	int Backup = Backup_start_num + 1;
 	while (scanf("%s%s",IP_str,DN_str)!=EOF)
 	{
 		int IP_encoded = encode(IP_str, strlen(IP_str));
@@ -95,6 +95,28 @@ void init()
 			Backup++;
 		}
 	}
+	printf("%d\n",Backup);
+}
+void hash_test()
+{
+	int i = 1;
+	int cnt_success = 0;
+	int cnt_fail = 0;
+	int success_num = 0;
+	for (;i <= mod; i++)
+	{
+		int x = i;
+		int depth = 1;
+		while (Hash_table[x].occupied == true)
+		{
+			cnt_success += depth;
+			success_num++;
+			x = Hash_table[x].Next_id;
+			depth++;
+		}
+		cnt_fail += depth;
+	}
+	printf("%lf %lf\n",1.0 * cnt_success / success_num, 1.0 * cnt_fail / mod);
 }
 int find_IP(char *s, int len)
 {
@@ -110,5 +132,6 @@ int find_IP(char *s, int len)
 int main()
 {
 	init();
+	hash_test();
 	return 0;
 } 
