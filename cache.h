@@ -1,3 +1,4 @@
+#include <string.h>
 #define CacheSize 1024
 
 typedef struct Cache{
@@ -31,4 +32,20 @@ void add(char* name, int ip, Cache c){
         c.name[pos] = name;
         c.ip[pos] = ip;
     }
+}
+
+long long query(char * name, Cache c){
+    int i;
+    for(i = 0; i < c.size; i++){
+        if(strcmp(name,c.name[i]) == 0){
+            int j;
+            for(j = 0; j < c.size; j++){
+                c.last[j]++;
+            }
+            c.last[i] = 0;
+            return c.ip[i];
+            
+        }
+    }
+    return -1;
 }
