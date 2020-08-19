@@ -1,22 +1,27 @@
-#include<stdio.h>
-#include<string.h>
-#define Length 300
+#ifndef HASH_H
+#define HASH_H
+
+#include <stdio.h>
+#include <string.h>
+#define MAX_FILE_LENGTH 128
+#define DNS_Length 300
 #define Total_Record 6000
-#define Backup_start_num 5001
+#define Backup_start_num 5001 
+#define bool int
 #define true 1
 #define false 0
-#define bool int
 
-const int p = 23333, mod = 4993;
-//const int Length = 300, Total_Record = 2000;
 struct HASH_TABLE
 {
-	char Name[Length + 5];
+	char Name[DNS_Length + 5];
 	unsigned int IP_encoded;
 	int Next_id;
-	bool occupied;
+	int occupied;
 };
 struct HASH_TABLE Hash_table[Total_Record + 5];
+
+extern char PATH[MAX_FILE_LENGTH];
+extern const int p, mod;
 void decode(unsigned int IP_encoded, char *s)
 {
 	int len = 0, i = 0;
@@ -46,7 +51,7 @@ void decode(unsigned int IP_encoded, char *s)
 		}
 	s[len++] = '\0';
 }
-int encode(char *s, int len)
+unsigned int encode(char *s, int len)
 {
 	int i = 0;
 	int IP_encoded = 0, num = 0;
@@ -62,7 +67,7 @@ int encode(char *s, int len)
 	IP_encoded = (IP_encoded << 8) | num;
 	return IP_encoded;
 }
-char IP_str[Length + 5], DN_str[Length + 5];
+char IP_str[DNS_Length + 5], DN_str[DNS_Length + 5];
 int get_hash(char *s, int len)
 {
 	int i = 0;
@@ -71,9 +76,9 @@ int get_hash(char *s, int len)
 		Hash_num = (1ll * Hash_num * p % mod + s[i]) % mod;
 	return Hash_num + 1;
 }
-void init()
+void load_dns_table()
 {
-	freopen("C:\\Users\\magic_star\\Desktop\\dnsrelay.txt","r",stdin);
+	freopen(PATH,"r",stdin);
 	int Backup = Backup_start_num + 1;
 	while (scanf("%s%s",IP_str,DN_str)!=EOF)
 	{
@@ -118,7 +123,7 @@ void hash_test()
 	}
 	printf("%lf %lf\n",1.0 * cnt_success / success_num, 1.0 * cnt_fail / mod);
 }
-int find_IP(char *s, int len)
+long long find_IP(char *s, int len)
 {
 	int Hash_number = get_hash(s, len);
 	int now = Hash_number;
@@ -129,9 +134,4 @@ int find_IP(char *s, int len)
 	}
 	return -1;
 }
-int main()
-{
-	init();
-	hash_test();
-	return 0;
-} 
+#endif

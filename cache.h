@@ -1,14 +1,17 @@
+#ifndef CACHE_H
+#define CACHE_H
 #include <string.h>
-#define CacheSize 1024
+#define Cache_Size 1024
 
-typedef struct Cache{
-    char* name[CacheSize];
-    int ip[CacheSize];
-    int last[CacheSize];
+struct Cache{
+    char* name[Cache_Size];
+    unsigned int ip[Cache_Size];
+    int last[Cache_Size];
+    int ttl[Cache_Size];
     int size;
 };
 
-int lru(Cache c){
+int lru(struct Cache c){
     int i;
     int pos = 0;
     int pval = -1;
@@ -21,20 +24,22 @@ int lru(Cache c){
     return pos;
 }
 
-void add(char* name, int ip, Cache c){
-    if(c.size < CacheSize){
-        c.size++;
+void add(char* name, unsigned int ip, int ttl, struct Cache c){
+    if(c.size < Cache_Size){
         c.name[c.size] = name;
         c.ip[c.size] = ip;
+        c.ttl[c.size] = ttl;
+        c.size++;
     }
     else{
         int pos = lru(c);
         c.name[pos] = name;
         c.ip[pos] = ip;
+        c.ttl[pos] = ttl;
     }
 }
 
-long long query(char * name, Cache c){
+long long query_in_cache(char * name, struct Cache c){
     int i;
     for(i = 0; i < c.size; i++){
         if(strcmp(name,c.name[i]) == 0){
@@ -49,3 +54,21 @@ long long query(char * name, Cache c){
     }
     return -1;
 }
+
+void maintain(struct Cache c){
+    int i,j;
+    for(i = 0; i < c.size; i++){
+        c.ttl[i]--;
+        if(!(c.ttl[i] > 0)){
+            for(j = i + 1; j < c.size; j++){
+                c.ip[j - 1] = c.ip[j];
+                c.last[j - 1] = c.last[j];
+                c.name[j - 1] = c.name[j];
+                c.ttl[j - 1] = c.ttl[j];
+            }
+            c.size--;
+            i--;
+        }
+    }
+}
+#endif
