@@ -1,17 +1,30 @@
 #ifndef CACHE_H
 #define CACHE_H
 #include <string.h>
-#define Cache_Size 1024
+#include <stdio.h>
+#include <time.h>
+#include "hash.h"
+#define Cachesize 512 //Cache����
+#define MAX_DOMAIN_LENGTH 512
+
+extern const int mod,p;
+
+extern struct Cache c;
+
+bool hash_occupy[Cachesize << 7];
+int hash_id[Cachesize << 7]; 
 
 struct Cache{
-    char* name[Cache_Size];
-    unsigned int ip[Cache_Size];
-    int last[Cache_Size];
-    int ttl[Cache_Size];
-    int size;
+    int id[Cachesize];//cache��ÿ��������Ӧ��ϣֵ
+    char name[Cachesize][MAX_DOMAIN_LENGTH];//cache��ÿ��������
+    unsigned int ip[Cachesize]; //cache��ÿ���ip��ַ
+    int last[Cachesize]; //cache��ÿ��lruֵ
+    int ttl[Cachesize]; //cache��ÿ���ttl
+    int ti[Cachesize];  //cache��ÿ������ʱ��
+    int size; //��ǰcache��С
 };
 
-int lru(struct Cache c){
+int lru(){ //lru�㷨
     int i;
     int pos = 0;
     int pval = -1;
@@ -24,51 +37,78 @@ int lru(struct Cache c){
     return pos;
 }
 
-void add(char* name, unsigned int ip, int ttl, struct Cache c){
-    if(c.size < Cache_Size){
-        c.name[c.size] = name;
+
+
+void output_cache(){
+	int i;
+	printf("================================i am cache===============================\n");
+	printf("c.size=%d\n",c.size);
+    for(i = 0; i < c.size; i++){
+        printf("%s %u %d\n",c.name[i],c.ip[i],c.ttl[i]);
+    }
+	printf("=========================================================================\n");
+}
+
+
+void add_to_cache(char* name, unsigned int ip, int ttl, int now_time){ //����Ŀ����cache��
+    if(c.size < Cachesize){
+        int hash_num = get_hash(name,strlen(name));
+        while(hash_occupy[hash_num]){
+            hash_num++;
+            hash_num %= mod;
+            if(!hash_num){
+                hash_num += mod;
+            }
+        }
+        hash_occupy[hash_num] = 1;
+        hash_id[hash_num] = c.size;
+        strcpy(c.name[c.size],name);
+        c.id[c.size] = hash_num;
         c.ip[c.size] = ip;
         c.ttl[c.size] = ttl;
+        c.ti[c.size] = now_time;
         c.size++;
     }
     else{
         int pos = lru(c);
-        c.name[pos] = name;
+        int last = c.id[pos];
+        hash_occupy[last] = 0;
+        int hash_num = get_hash(name,strlen(name));
+        while(hash_occupy[hash_num]){
+            hash_num++;
+            hash_num %= mod;
+            if(!hash_num){
+                hash_num += mod;
+            }
+        }
+        hash_occupy[hash_num] = 1;
+        hash_id[hash_num] = pos;
+        strcpy(c.name[pos],name);
+        c.id[pos] = hash_num;
         c.ip[pos] = ip;
         c.ttl[pos] = ttl;
+        c.ti[pos] = now_time;
     }
 }
 
-long long query_in_cache(char * name, struct Cache c){
-    int i;
-    for(i = 0; i < c.size; i++){
-        if(strcmp(name,c.name[i]) == 0){
-            int j;
-            for(j = 0; j < c.size; j++){
-                c.last[j]++;
+long long query_in_cache(char * name){ //��cache�в�ѯ
+    int hash_num = get_hash(name,strlen(name));
+    while(hash_occupy[hash_num]){
+        if(strcmp(c.name[hash_id[hash_num]],name) == 0){
+            if(c.ttl[hash_id[hash_num]] < time(0) - c.ti[hash_id[hash_num]]){
+                return -1;
             }
-            c.last[i] = 0;
-            return c.ip[i];
-            
+            int res_ttl = c.ttl[hash_id[hash_num]] - (int)time(0) + c.ti[hash_id[hash_num]];
+            return c.ip[hash_id[hash_num]] | ((long long)res_ttl << 32);
+        }
+        hash_num++;
+        hash_num %= mod;
+        if(!hash_num){
+            hash_num += mod;
         }
     }
     return -1;
 }
 
-void maintain(struct Cache c){
-    int i,j;
-    for(i = 0; i < c.size; i++){
-        c.ttl[i]--;
-        if(!(c.ttl[i] > 0)){
-            for(j = i + 1; j < c.size; j++){
-                c.ip[j - 1] = c.ip[j];
-                c.last[j - 1] = c.last[j];
-                c.name[j - 1] = c.name[j];
-                c.ttl[j - 1] = c.ttl[j];
-            }
-            c.size--;
-            i--;
-        }
-    }
-}
+
 #endif
